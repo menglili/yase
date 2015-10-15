@@ -1,8 +1,6 @@
-1. Team members: 
-Chaoyi Huang (chaoyih)
-Mengli Li (limengli)
-Huinan Yu (huinanyu)
-Xinchao Shen (xinchaos)
+1. Final project of CIS555
+
+YASE is a mini search engine which has an index size of about one million web pages. It is designed to get relevant search results within a reasonable limit of time. It consists of four major components: Crawler, Indexer, PageRank and Search Engine. By the way, YASE stands for Yet Another Search Engine. Details are in Final Report.
 
 2. Features Implemented:
 
@@ -64,7 +62,13 @@ edu.upenn.cis455.YASE.storage
 /YASE/src/edu/upenn/cis455/YASE/storage/Worker.java
 
 
-3. Run instruction:
+4. Run instruction:
 
-Export WAR from the eclipse project and install it on Jetty.
+Export WAR from the eclipse project and install it on Jetty/Tomcat
 Visit /defaultservlet
+
+5. Team members: 
+Chaoyi Huang (chaoyih)
+Mengli Li (limengli)
+Huinan Yu (huinanyu)
+Xinchao Shen (xinchaos)
