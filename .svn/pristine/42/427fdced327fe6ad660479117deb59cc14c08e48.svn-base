@@ -1,0 +1,29 @@
+package edu.upenn.cis455.YASE.storage;
+
+import edu.upenn.cis455.YASE.Util;
+import edu.upenn.cis455.YASE.database.YASEDatabase;
+
+public class ContentDBTester {
+    public static void main(String[] args) throws Exception {
+
+        String urlString = "http://wordpress.com";
+        int dbIndex = Util.getWorkerIndex(urlString, 5);
+
+
+        String dbLocation = "DB/" + dbIndex;
+        System.out.println("dbLocation = " + dbLocation);
+        YASEDatabase yaseDatabase = new YASEDatabase(dbLocation);
+
+        //store to DB
+//        yaseDatabase.addURLContent(urlString, "test");
+//        yaseDatabase.addWordIndexPair(urlString, "invertIndex");
+
+
+        String content = yaseDatabase.getURLContent(urlString);
+        System.out.println("content = " + content);
+        String invertIndex = yaseDatabase.getInvertedList(urlString);
+        System.out.println("invertIndex = " + invertIndex);
+
+        yaseDatabase.shut();
+    }
+}

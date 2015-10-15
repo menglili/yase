@@ -1,0 +1,121 @@
+package edu.upenn.cis455.YASE.recycle;
+
+import edu.upenn.cis455.YASE.database.YASEDatabase;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+
+public class Worker extends HttpServlet {
+
+    private String masterAddress, storageDirectory, port;
+
+    public void init() {
+
+        storageDirectory = getInitParameter("storagedir");
+        port = getInitParameter("port");
+
+
+        //DB stuff
+    }
+
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        doGet(request, response);
+    }
+
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+
+        String requestURI = request.getRequestURI();
+        System.out.println("worker received: " + requestURI + "?" + request.getQueryString());
+
+        if (requestURI.equalsIgnoreCase("/worker/joinmaster")) {
+            handleJoinMaster(request);
+        }
+        if (requestURI.equalsIgnoreCase("/worker/get")) {
+            try {
+                handleGet(request);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+
+    }
+
+    private void handleJoinMaster(HttpServletRequest request) {
+
+        masterAddress = request.getParameter("master");
+        sendJoin();
+
+    }
+
+    private void handleGet(HttpServletRequest request) throws Exception {
+        System.out.println("dblocation: " + storageDirectory);
+        Map keysMap = request.getParameterMap();
+        String[] keys = (String[]) keysMap.get("key");
+
+        YASEDatabase yaseDatabase = new YASEDatabase(storageDirectory);
+
+        HashMap<String, String> keyValuePairs = new HashMap<String, String>();
+
+        for (String key : keys) {
+            System.out.println("key: " + key);
+            String value = yaseDatabase.getInvertedList(key);
+            System.out.println("db retrieved: " + value);
+            keyValuePairs.put(key, value);
+        }
+
+        //send Push
+        sendPush(keyValuePairs);
+        yaseDatabase.shut();
+
+
+    }
+
+    private void sendPush(HashMap<String, String> keyValuePairs) throws IOException {
+
+        String keyValueStrings = keyValuePairs.toString();
+        URL url = new URL("http://" + masterAddress + "/master/push");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setDoOutput(true);
+        connection.setDoInput(true);
+        connection.setInstanceFollowRedirects(false);
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        connection.setRequestProperty("charset", "utf-8");
+        connection.setRequestProperty("Content-Length", "" + Integer.toString(keyValueStrings.getBytes().length));
+        connection.setUseCaches(false);
+
+        DataOutputStream dataOutputStream = new DataOutputStream(connection.getOutputStream());
+        dataOutputStream.writeBytes(keyValueStrings);
+        dataOutputStream.flush();
+        dataOutputStream.close();
+        connection.getResponseCode();
+        connection.disconnect();
+    }
+
+    private void sendJoin() {
+        String parameters = String.format("port=%s", port);
+        String urlString = "http://" + masterAddress + "/master/join?" + parameters;
+        try {
+            URL url = new URL(urlString);
+            HttpURLConnection connection;
+
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestProperty("charset", "utf-8");
+            connection.getResponseCode();
+            connection.disconnect();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+}

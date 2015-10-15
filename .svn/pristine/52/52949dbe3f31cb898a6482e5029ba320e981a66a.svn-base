@@ -1,0 +1,78 @@
+package edu.upenn.cis455.YASE.pagerank;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
+
+public class SavePR {
+	
+	public static String mergeFile(String folder) throws IOException {
+		  File dir=new File(folder);
+		  File[] files=dir.listFiles();
+		  double sum = 0;
+		  //create a merge file
+		  String mergeFileName=dir.getPath()+"/"+"PRStore"+".txt";
+		  File mergedFile=new File(mergeFileName);
+		  mergedFile.createNewFile();
+		  
+		  //merge all files in spool-in dir
+		  FileWriter fw=null;
+		  BufferedWriter bw=null;
+		  try{
+			  fw=new FileWriter(mergedFile,true);
+			  bw=new BufferedWriter(fw);
+		  }catch(Exception e){
+			  System.out.println(e);
+		  }
+		  
+		  for(File f:files){
+			  //System.out.println("name:"+f.getName());
+			  if(f.getName().equals("_SUCCESS")||f.getName().equals(".DS_Store")) {
+				  //System.out.println("hi");
+				  continue;
+			  }
+			  //System.out.println("merging: "+f.getName());
+			  FileInputStream fis;
+			  
+			  try{
+				  fis=new FileInputStream(f);
+				  BufferedReader br=new BufferedReader(new InputStreamReader(fis));
+				  
+				  String line;
+				  String newLine;
+				  while((line=br.readLine())!=null){
+					  String split[] = line.split("\t");
+					 // System.out.println("***"+split[0]);
+					  if(split[0].equals("")) {
+						  //System.out.println("******************"+line);
+						  continue;
+					  }
+					  
+					  newLine = split[0]+"\t"+split[1];
+					  if(Double.parseDouble(split[1])>1.0) System.out.println(newLine);
+					  sum=sum+Double.parseDouble(split[1]);
+					  bw.write(newLine);
+					 // System.out.println(newLine);
+					  bw.newLine();
+				  }
+				  br.close();
+			  }catch(Exception e){
+				  System.out.println(e);
+			  }
+		  }	  
+		  System.out.println("sum"+sum);
+		  bw.close();
+		  
+		  return mergeFileName;
+	  }
+
+	
+	public static void main(String[] args) throws IOException{
+		mergeFile(args[0]);
+	}
+}

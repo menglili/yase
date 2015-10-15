@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en-gb" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Result</title>
+        <link rel="stylesheet" href="uikit.docs.min.css">
+	<link rel="shortcut icon" href="logo.ico" type="image/x-icon">
+        <link rel="apple-touch-icon-precomposed" href="logo.png">
+        <script src="jquery.js"></script>
+        <script src="uikit.min.js"></script>
+    </head>
+
+    <body>
+    <div class="uk-container uk-container-center uk-margin-top uk-margin-large-bottom">
+        <div class="uk-width-medium-2-2">
+            <div class="uk-panel uk-panel-header">
+				<img class="uk-margin-bottom" width="300" height="200" src="title.png" alt="">
+                	<form class="uk-form uk-form-stacked" action="/search" method="get">
+                    	<div class="uk-form-row">
+                        	<input class="uk-width-medium-2-3" type="text" placeholder="Search Content..." name="search_content">
+							<input class="uk-button uk-button-primary" type="submit" value="YASE search">   
+                    	</div>
+ 		        	</form>
+            	</div>
+        	</div>
+            <p></p>
+			
+ 		<div class="uk-width-medium-2-3">
+			<div class="uk-panel uk-panel-header">
+			 	<h3 class="uk-panel-title">About 10 results (1s)</h3>
+			</div>
+			<h2>
+            	<a href="http://www.google.com">Google</a>
+            </h2>
+            <div class="uk-form-row">
+            	<p>www.google.com</p>
+            	<p>Search the world's information, including webpages, images, videos and more. Google has many special features to help you find exactly what you're looking ...</p>
+            </div>
+            <h2>
+            	<a href="http://www.upenn.edu">University of Pennsylvania</a>
+            </h2>
+            <div class="uk-form-row">
+            	<p>www.upenn.edu</p>
+            	<p>The University of Pennsylvania is one of the oldest universities in America and, as a member of the Ivy League, one of the most prestigious institutions of higher ...</p>
+            </div>  
+            <h2>
+            	<a href="http://www.upenn.edu">CIS 455 / 555: Internet and Web Systems (Spring 2014)</a>
+            </h2>
+            <div class="uk-form-row">
+            	<p>www.upenn.edu</p>
+            	<p>The University of Pennsylvania is one of the oldest universities in America and, as a member of the Ivy League, one of the most prestigious institutions of higher ...</p>
+            </div>  
+		</div>
+		<p></p>
+		<div class="uk-width-medium-2-3">
+			<ul class="uk-pagination">
+                 <li class="uk-disabled"><span> << </span></li>
+                 <li><a href="&current=10"><span> >> </span></a></li>
+                 <li><a href="&current=-10"><span> << </span></a></li>
+                 <li class="uk-disabled"><span> >> </span></li>
+            </ul>
+        </div>
+        
+    </div>
+    </body>
+</html>
+

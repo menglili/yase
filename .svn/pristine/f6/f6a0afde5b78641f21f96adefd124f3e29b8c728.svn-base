@@ -1,0 +1,117 @@
+package edu.upenn.cis455.YASE.indexer;
+
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.Version;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+
+public class InvertIndex {
+    public static class Map extends MapReduceBase implements
+            Mapper<LongWritable, Text, Text, Text> {
+        private Text word = new Text();
+        private Text url_tf = new Text();
+
+        @Override
+        public void map(LongWritable key, Text value,
+                        OutputCollector<Text, Text> output, Reporter reporter)
+                throws IOException {
+
+            String line = value.toString();
+            String[] splitline = line.split("\t");
+
+            if (splitline.length != 4) {
+                // System.out.println("error: line read:" + line + " ");
+                return;
+            }
+
+            // set to lowercase
+            for (int i = 0; i < splitline.length; i++)
+                splitline[i] = splitline[i].toLowerCase();
+
+            String words = splitline[2].concat(" " + splitline[3]);
+            Analyzer analyzer = new EnglishAnalyzer(Version.LUCENE_47);
+
+            TokenStream stream = analyzer.tokenStream(null, words);
+            stream.reset();
+
+            HashMap<String, Integer> tfMap = new HashMap<>();
+
+            int dataLength = 0;
+            while (stream.incrementToken()) {
+                String wordString = stream
+                        .getAttribute(CharTermAttribute.class).toString();
+                if (tfMap.keySet().contains(wordString)) {
+                    int tf = tfMap.get(wordString);
+                    tf++;
+                    tfMap.put(wordString, tf); // update tf
+                } else { // if new
+                    tfMap.put(wordString, 1);
+                }
+                dataLength++;
+            }
+
+            for (String w : tfMap.keySet()) {
+                int tf = tfMap.get(w);
+                double tmp = 1.0 * tf;
+                double tf2 = tmp / java.lang.Math.sqrt(dataLength);
+
+                url_tf.set(splitline[0] + " " + tf2);
+                word.set(w);
+                output.collect(word, url_tf);
+            }
+
+            stream.close();
+            analyzer.close();
+        }
+    }
+
+    public static class Reduce extends MapReduceBase implements
+            Reducer<Text, Text, Text, Text> {
+        private Text invertedList = new Text();
+
+        @Override
+        public void reduce(Text key, Iterator<Text> values,
+                           OutputCollector<Text, Text> output, Reporter reporter)
+                throws IOException {
+
+            String contentList = values.next().toString();
+
+            while (values.hasNext()) {
+                String urlString = values.next().toString();
+                contentList += "\t" + urlString;
+            }
+            invertedList.set(contentList);
+            output.collect(key, invertedList);
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        JobConf conf = new JobConf(InvertIndex.class);
+        conf.setJobName("InvertIndex");
+
+        conf.setOutputKeyClass(Text.class);
+        conf.setOutputValueClass(Text.class);
+
+        conf.setMapperClass(Map.class);
+        conf.setCombinerClass(Reduce.class);
+        conf.setReducerClass(Reduce.class);
+
+        conf.setInputFormat(TextInputFormat.class);
+        conf.setOutputFormat(TextOutputFormat.class);
+
+        FileInputFormat.setInputPaths(conf, new Path(args[0]));
+        FileOutputFormat.setOutputPath(conf, new Path(args[1]));
+
+
+        JobClient.runJob(conf);
+    }
+}

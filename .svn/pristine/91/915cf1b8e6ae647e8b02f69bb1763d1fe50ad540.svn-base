@@ -1,0 +1,243 @@
+package edu.upenn.cis455.YASE.database;
+
+import com.sleepycat.je.*;
+
+import java.io.File;
+import java.io.UnsupportedEncodingException;
+
+public class YASEDatabase {
+
+    private Environment env;
+    public Database invertedIndexDB;
+    public Database fowardIndexDB;
+
+    public YASEDatabase(String dbLocation) throws Exception {
+        if (dbLocation.endsWith("/"))
+            dbLocation = dbLocation.substring(0, dbLocation.length() - 1);
+
+        File dbFile = new File(dbLocation);
+
+        if (!dbFile.exists() || !dbFile.isDirectory()) {
+            if (!dbFile.mkdir())
+                throw new IllegalArgumentException("Invalid db directory!");
+        }
+
+
+        EnvironmentConfig config = new EnvironmentConfig();
+        config.setAllowCreate(true);
+        config.setTransactional(false);
+
+        this.env = new Environment(dbFile, config);
+
+        DatabaseConfig dbConfig = new DatabaseConfig();
+        DatabaseConfig dbConfigBackup = new DatabaseConfig(); //for backup
+
+        dbConfig.setAllowCreate(true);
+        dbConfigBackup.setAllowCreate(true);
+        dbConfig.setTransactional(false);
+        dbConfig.setDeferredWrite(true);
+
+
+        this.invertedIndexDB = this.env.openDatabase(null, "invertedIndexDB", dbConfigBackup);
+        this.fowardIndexDB = this.env.openDatabase(null, "forwardIndexDB", dbConfigBackup);
+//        this.pageRankDB = this.env.openDatabase(null, "pageRankDB", dbConfigBackup);
+    }
+
+    public void shut() {
+        this.fowardIndexDB.close();
+        this.invertedIndexDB.close();
+//        this.pageRankDB.close();
+        this.env.close();
+    }
+
+    //url content db
+
+    /**
+     * Add url and its content into forward index database
+     *
+     * @param url
+     * @param content
+     * @return
+     */
+    public boolean addURLContent(String url, String content) throws Exception {
+        url = url.trim();
+        content = content.trim();
+
+        DatabaseEntry key = convertStringToEntry(url, null);
+        DatabaseEntry value = convertStringToEntry(content, null);
+
+        OperationStatus status = fowardIndexDB.putNoOverwrite(null, key, value);
+
+        if (status.equals(OperationStatus.KEYEXIST)) {
+            System.err.println("Existing word!");
+            return false;
+        }
+
+        //Sync
+//        try {
+//            env.sync();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+        return true;
+    }
+
+    /**
+     * Get get url content from db given a url.
+     *
+     * @param url
+     * @return string of content
+     */
+    public String getURLContent(String url) throws Exception {
+        DatabaseEntry entry = new DatabaseEntry();
+        OperationStatus status = fowardIndexDB.get(null,
+                convertStringToEntry(url, null), entry, LockMode.DEFAULT);
+
+        if (!status.equals(OperationStatus.SUCCESS))
+            return null;
+        return convertEntryToString(entry, null);
+    }
+
+    //inverted index db
+
+    /**
+     * Add word and inverted list into inverted index database
+     *
+     * @param word
+     * @param invertedlist
+     * @return
+     */
+    public boolean addWordIndexPair(String word, String invertedlist) throws Exception {
+        word = word.trim();
+        invertedlist = invertedlist.trim();
+
+        DatabaseEntry key = convertStringToEntry(word, null);
+        DatabaseEntry value = convertStringToEntry(invertedlist, null);
+
+        OperationStatus status = invertedIndexDB.putNoOverwrite(null, key, value);
+
+        if (status.equals(OperationStatus.KEYEXIST)) {
+//            System.err.println("Existing word!");
+            return false;
+        }
+
+        //Sync
+//        try {
+//            env.sync();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+        return true;
+    }
+
+
+    /**
+     * Get inverted index from db given a word.
+     *
+     * @param word
+     * @return entry string
+     */
+    public String getInvertedList(String word) throws Exception {
+        DatabaseEntry entry = new DatabaseEntry();
+        OperationStatus status = invertedIndexDB.get(null,
+                convertStringToEntry(word, null), entry, LockMode.DEFAULT);
+
+        if (!status.equals(OperationStatus.SUCCESS))
+            return null;
+        return convertEntryToString(entry, null);
+    }
+
+    //page rank db
+
+    /**
+     * Add word and inverted list into inverted index database
+     *
+     * @param url
+     * @param score
+     * @return
+     */
+//    public boolean addPageRankPair(String url, double score) throws Exception {
+//        url = url.trim();
+//        String scoreString = String.valueOf(score);
+//        DatabaseEntry key = convertStringToEntry(url, null);
+//        DatabaseEntry value = convertStringToEntry(scoreString, null);
+//
+//        OperationStatus status = pageRankDB.putNoOverwrite(null, key, value);
+//
+//        if (status.equals(OperationStatus.KEYEXIST)) {
+//            System.err.println("Existing url!");
+//            return false;
+//        }
+//
+//        //Sync
+////        try {
+////            env.sync();
+////        } catch (Exception e) {
+////            e.printStackTrace();
+////        }
+//        return true;
+//    }
+
+    /**
+     * Get score from db given a url.
+     *
+     * @param string
+     * @return score
+     */
+//    public String getPageRankScore(String url) throws Exception {
+//        DatabaseEntry entry = new DatabaseEntry();
+//        OperationStatus status = pageRankDB.get(null,
+//                convertStringToEntry(url, null), entry, LockMode.DEFAULT);
+//
+//        if (!status.equals(OperationStatus.SUCCESS))
+//            return null;
+//        return convertEntryToString(entry, null);
+//    }
+
+    //convert a string to a db entry
+    private DatabaseEntry convertStringToEntry(String string, String encoding) {
+        byte[] bytes = null;
+        if (encoding != null) {
+            try {
+                bytes = string.getBytes(encoding);
+                return new DatabaseEntry(bytes);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        try {
+            bytes = string.getBytes("UTF-8");
+            return new DatabaseEntry(bytes);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return new DatabaseEntry();
+    }
+
+    //convert a db entry to a string
+    private String convertEntryToString(DatabaseEntry entry, String encoding) {
+        byte[] bytes = entry.getData();
+
+        if (encoding != null) {
+            try {
+                return new String(bytes, encoding);
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+        }
+
+        try {
+            return new String(bytes, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+
+        return new String();
+    }
+
+    public void sync() {
+        env.sync();
+
+    }
+}

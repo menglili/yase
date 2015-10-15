@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/html" lang="en-gb" dir="ltr" class="uk-height-1-1">
+
+
+    <head>
+        <meta charset="utf-8">
+        <title>YASE</title>
+        <link rel="stylesheet" href="uikit.docs.min.css">
+		<link href="style.css" rel="stylesheet">
+		<link rel="shortcut icon" href="logo.ico" type="image/x-icon">
+        <link rel="apple-touch-icon-precomposed" href="logo.png">
+        <link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1/themes/base/jquery-ui.css" rel="stylesheet" />
+		<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1/themes/ui-lightness/jquery-ui.css" type="text/css" rel="stylesheet"/>
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1/jquery-ui.min.js"></script>
+        <script src="jquery.js"></script>
+        <script src="uikit.min.js"></script>
+
+		<style>
+			input{font-size:1.3em;}
+			button{padding:0;border:none;background:none;}
+			#log{position: absolute; top: 10px; right: 10px;}
+			span{color:blue; text-decoration: underline; cursor: pointer;}
+			body {
+				
+				background-image: url("sky_back.png");
+				background-size: 100%;
+				font: 18px/18px Arial, sans-serif;
+				width: 100%;
+}
+		</style>
+		
+    </head>
+
+    <body background="sky_back.png" class="uk-height-1-1" >
+    
+    
+		
+		
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js" type="text/javascript"></script>
+		<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1/jquery-ui.min.js" type="text/javascript"></script>
+		<script src="jquery.googleSuggest.js" type="text/javascript"></script>
+		
+		
+        <div class="uk-vertical-align uk-text-center uk-height-1-1">
+            <div class="uk-vertical-align-middle" style="width: 400px;">
+                <img class="uk-margin-bottom" width="400" height="300" src="title.png" alt="">
+                <form class="uk-panel uk-panel-box uk-form" action="/searchquery" method="get">
+                    <div class="uk-form-row" >
+	                    <div id="inputs">
+	                        <input id="searchBox" class="uk-width-1-1 uk-form-large" type="text" name="search_content" placeholder="Search Content..." value="">
+						        <script>
+									$.each("web".split(" "), function(i, v){
+									  var div = $("<div>").appendTo("#inputs")
+									    , input = $('#searchBox').appendTo(div);							   
+									  input.googleSuggest({ service: v });
+									});
+								</script>
+						</div>
+	                </div>
+                    <div class="uk-top">   
+			    <input class="uk-width-1-1 uk-button uk-button-primary uk-button-large" type="submit" value="YASE search">   
+		     
+				<div class="uk-top">   
+                	<p id="controls" class="uk-width-1-1 uk-vertical-align-middle">
+                		<button id="start_button"><img src="phoneICON.png"/></button>	
+                	</p>
+                	
+		
+				<script type="text/javascript">
+		
+				    var final_transcript = '';
+				    var recognizing = false;
+				
+				    var language = 'en-GB';  // change this to your language
+				
+				    $(document).ready(function() {
+				
+				        // check that your browser supports the API
+				        if (!('webkitSpeechRecognition' in window)) {
+				            alert("Your Browser does not support the Speech API");
+				
+				        } else {
+				
+				            // Create the recognition object and define four event handlers (onstart, onerror, onend, onresult)
+				
+				            var recognition = new webkitSpeechRecognition();
+				            recognition.continuous = true;         // keep processing input until stopped
+				            recognition.interimResults = true;     // show interim results
+				            recognition.lang = language;           // specify the language
+				
+				            recognition.onstart = function() {
+				                recognizing = true;
+				                $('#instructions').html('Speak slowly and clearly');
+				                $('#start_button').html('Click to Stop');
+				            };
+				
+				            recognition.onerror = function(event) {
+				                console.log("There was a recognition error...");
+				            };
+				
+				            recognition.onend = function() {
+				                recognizing = false;
+				                $('#instructions').html('Done');
+				            };
+				
+				            recognition.onresult = function(event) {
+				                var interim_transcript = '';
+				
+				                // Assemble the transcript from the array of results
+				                for (var i = event.resultIndex; i < event.results.length; ++i) {
+				                    if (event.results[i].isFinal) {
+				                        final_transcript += event.results[i][0].transcript;
+				                    } else {
+				                        interim_transcript += event.results[i][0].transcript;
+				                    }
+				                }
+				
+				                console.log("interim:  " + interim_transcript);
+				                console.log("final:    " + final_transcript);
+				                // update the web page
+				                if(final_transcript.length > 0) {
+				            
+				                	$('#searchBox').val(final_transcript);
+				                }
+				            };
+				
+				
+				            $("#start_button").click(function(e) {
+				                e.preventDefault();
+				
+				                if (recognizing) {
+				                    recognition.stop();
+				                    $('#start_button').html('Click to Start Again');
+				                    recognizing = false;
+				                } else {
+				                    final_transcript = '';
+				
+				                    // Request access to the User's microphone and Start recognizing voice input
+				                    recognition.start();
+				
+				                    $('#instructions').html('Allow the browser to use your Microphone');
+				                    $('#start_button').html('waiting');
+				                    $('#searchBox').val('');
+				                }
+				            });
+				        }
+				    });
+		
+		</script>
+                </div>
+                </div>
+                </form>
+            </div>
+        </div>
+        
+        
+        
+        
+       
+	
+    </body>
+</html>

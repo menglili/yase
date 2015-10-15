@@ -1,0 +1,30 @@
+package edu.upenn.cis455.YASE.test;
+
+import java.util.Comparator;
+import java.util.PriorityQueue;
+
+import edu.upenn.cis455.YASE.searcher.URLVector;
+
+public class TestMain {
+	public static void main(String args[]){
+	 PriorityQueue<Integer> pq = new PriorityQueue<Integer>(10, new Comparator<Integer>() {
+         public int compare(Integer f1, Integer f2) {
+
+             if (f1 > f2) {
+                 return -1;
+             } else if (f1 == f2) {
+                 return 0;
+             } else {
+                 return 1;
+             }
+         }
+     });
+	 
+	 pq.add(1);
+	 pq.add(2);
+	 
+	 System.out.println(pq.poll());
+	}
+	
+	
+}

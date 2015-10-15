@@ -1,0 +1,32 @@
+<project name="YASE" default="all" basedir="./">
+  <target name="init">
+    <mkdir dir="target/WEB-INF/classes"/>
+  </target>
+	
+  <target name="compile-search" depends="init">
+    <javac srcdir="src" destdir="target/WEB-INF/classes" includes="**/search/*.java" deprecation="on"
+     debug="true" includeantruntime="false">
+    	<classpath>
+    		<fileset dir="lib">
+    		    <include name="*.jar"/>
+    		</fileset>
+    	</classpath>
+    	<compilerarg value="-Xlint"/>
+    </javac>
+  </target>
+  
+  <target name="all" depends="compile-search"/>
+  
+  <target name="war-search" depends="compile-search">
+    <jar destfile="search.war">
+      <fileset dir="target/" includes="WEB-INF/classes/**/*.class"/>
+      <fileset dir="target/" includes="WEB-INF/lib/*.jar"/>
+      <fileset dir="target/" includes="WEB-INF/*.xml"/>
+    </jar>
+  </target>
+
+  <target name="clean">
+    <delete dir="target/WEB-INF/classes"/>
+    <delete file="search.war"/>
+  </target>
+</project>

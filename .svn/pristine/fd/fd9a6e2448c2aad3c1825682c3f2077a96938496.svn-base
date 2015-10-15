@@ -1,0 +1,145 @@
+package edu.upenn.cis455.YASE.pagerank;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Set;
+
+
+public class ConvertFile {
+	
+	private static PrintWriter writer;
+
+
+	public static void convert(String filePath,String newFilePath) throws IOException{
+		
+		Process exec = Runtime.getRuntime().exec("sort "+filePath);
+		BufferedReader br=new BufferedReader(new InputStreamReader(exec.getInputStream()));
+		
+		//create convertFile
+		File file=new File(newFilePath);
+		if(!file.exists()) file.createNewFile();
+		FileWriter fw = new FileWriter(file.getAbsoluteFile());
+		BufferedWriter bw = new BufferedWriter(fw);
+		
+		  	  
+		String line="";
+		String source="";
+		StringBuffer sb=new StringBuffer();
+		//String mergeLine="";
+		int no=0;
+		int writeLine=0;
+		//LinkedList<String> linkList=new LinkedList<String>();
+		Set<String> linkSet=new HashSet<String>();
+		
+		while((line=br.readLine())!=null){
+			no++;
+			String[] splits=line.split("	");
+			if(splits.length<=2) {
+				//System.out.println("****");
+				continue;
+			}
+			
+			//System.out.println("length:"+splits.length);
+			if(source.equals("")) source=splits[0];
+			if(splits[0].equals(source)){
+				for(int i=2;i<splits.length;i++){
+					//System.out.println("add"+splits[i]);
+					//linkList.add(splits[i]);
+					linkSet.add(splits[i]);
+				}
+				//System.out.println("linkSet now:"+linkSet);
+				source=splits[0];
+			}else{
+				//System.out.println("linkSet:"+linkList);
+				Iterator iter=linkSet.iterator();
+				//Iterator iter=linkList.iterator();
+				//sb.append(source+"	"+"1.0	");
+				bw.write(source+"	"+"1.0	");
+				//mergeLine=source+"	"+"1.0	";
+				while(iter.hasNext()){
+					//sb.append(iter.next()+"	");
+					String next=(String) iter.next();
+					if(!next.equals(source)) bw.write(next+"	");
+					//mergeLine=mergeLine+iter.next()+"	";
+				}			
+				//writer.println(mergeLine);
+				writeLine++;
+				//bw.write(sb+"\n");
+				bw.write("\n");
+				//bw.write(sb.toString()+"\n");
+				System.out.println("write:"+writeLine);
+				//out.close();
+				//System.out.println("mergeLine"+mergeLine);
+				
+				linkSet=new HashSet<String>();
+				//linkList=new LinkedList<String>();
+				for(int i=2;i<splits.length;i++){
+					linkSet.add(splits[i]);
+					//linkList.add(splits[i]);
+				}
+				source=splits[0];
+			}		
+		}
+		br.close();
+		Iterator iter=linkSet.iterator();
+		//Iterator iter=linkList.iterator();
+		bw.write(source+"	"+"1.0	");
+		//sb.append(source+"	"+"1.0	");
+		//mergeLine=source+"	"+"1.0	";
+		while(iter.hasNext()){
+			String next=(String) iter.next();
+			if(!next.equals(source)) bw.write(next+"	");
+			//sb.append(iter.next()+"	");
+			//mergeLine=mergeLine+iter.next()+"	";
+		}			
+		//writer.println(mergeLine);
+		//bw.write(sb.toString()+"\n");
+		bw.write("\n");
+		//bw.write(mergeLine+"\n");		
+		bw.close();
+		
+	}
+	
+	public static void removeSink(String newFilePath,String convertFilePath) throws IOException{
+		//File file=new File(newFilePath);
+		BufferedReader br=new BufferedReader(new FileReader(newFilePath));
+		String line="";
+		
+		
+		File file=new File(convertFilePath);
+		if(!file.exists()) file.createNewFile();
+		FileWriter fw = new FileWriter(file.getAbsoluteFile());
+		BufferedWriter bw = new BufferedWriter(fw);
+		
+		
+		while((line=br.readLine())!=null){
+			String splits[] = line.split("	");
+			if(splits.length<=2) continue;
+			else{
+				bw.write(line);
+				bw.write("\n");
+			}
+		}
+		bw.close();
+	}
+	
+	
+	public static void main(String[] args) throws IOException{
+		String filePath=args[0];
+		String newFilePath=args[1];
+		String convertFilePath=args[2];
+		convert(filePath,newFilePath);
+		removeSink(newFilePath,convertFilePath);
+	}
+
+}

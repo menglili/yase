@@ -1,0 +1,20 @@
+package edu.upenn.cis455.YASE;
+
+
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+public class Util {
+
+    public static int getWorkerIndex(String key, int numBucket)
+            throws NoSuchAlgorithmException, UnsupportedEncodingException {
+
+        MessageDigest md = MessageDigest.getInstance("SHA-1");
+        md.update(key.getBytes());
+        byte byteData[] = md.digest();
+        return (byteData[0] + 128) % numBucket;
+
+    }
+
+}

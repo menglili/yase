@@ -1,0 +1,105 @@
+package edu.upenn.cis455.YASE.indexer;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.Version;
+
+import java.io.*;
+
+public class Stemmer {
+
+    private static final File inputFolder = new File("raw");
+    private static final File outputFile = new File("stemmed");
+    private static final Analyzer analyzer = new EnglishAnalyzer(Version.LUCENE_47);
+
+    private static int lineCount = 0;
+    private static int errorCount = 0;
+    private static long startTime = System.currentTimeMillis();
+
+    private static String stem(String words) throws IOException {
+        //stem words
+        TokenStream wordStream = analyzer.tokenStream(null, words);
+        wordStream.reset();
+        String stemmedWords = "";
+        while (wordStream.incrementToken()) {
+            stemmedWords += " " + wordStream.getAttribute(CharTermAttribute.class).toString();
+        }
+        wordStream.close();
+        stemmedWords = stemmedWords.trim();
+        return stemmedWords;
+    }
+
+    public static void main(String[] args) throws IOException {
+
+        FileWriter fileWriter = new FileWriter(outputFile.getName(), true);
+        final BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+
+        if (!outputFile.exists()) {
+            if (!outputFile.createNewFile()) {
+//                System.out.println("Error: cannot create file!");
+            }
+        }
+
+        File[] inputFiles = inputFolder.listFiles();
+
+        //check input folder has files
+        if (inputFiles != null) {
+
+            //read every file in the folder
+            for (File file : inputFiles) {
+                BufferedReader br = new BufferedReader(new FileReader(file));
+
+                //read every line of a file
+                String line;
+                while ((line = br.readLine()) != null) {
+
+                    if (lineCount % 10000 == 0) {
+                        printProgress();
+                    }
+
+
+                    //split line
+                    String[] splitter = line.split("\t");
+
+                    //check format
+                    if (splitter.length != 4) {
+//                        System.out.println("format error:" + line);
+                        errorCount++;
+                        continue;
+                    }
+
+                    // set to lowercase
+                    for (int i = 0; i < splitter.length; i++)
+                        splitter[i] = splitter[i].toLowerCase();
+
+                    String urlString = splitter[0];
+                    String titleString = splitter[2];
+                    String wordsString = splitter[3];
+
+                    String stemmedTitle = stem(titleString);
+                    String stemmedWords = stem(wordsString);
+
+
+                    bufferedWriter.write(urlString + "\t" + splitter[1] + "\t" + stemmedTitle + "\t" + stemmedWords + "\n");
+
+                    lineCount++;
+
+                }
+            }
+        }
+
+
+        printProgress();
+        analyzer.close();
+        bufferedWriter.close();
+
+
+    }
+
+    private static void printProgress() {
+        double minutesElapsed = (double) (System.currentTimeMillis() - startTime) / 1000 / 60;
+        System.out.println("line: " + lineCount + "; error: " + errorCount + "; minutes elapsed: " + minutesElapsed);
+    }
+}

@@ -1,0 +1,257 @@
+package edu.upenn.cis455.YASE.search;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.Version;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+
+public class DefaultServlet extends HttpServlet {
+
+	static final long serialVersionUID = 455555002;
+	
+	public static String searchContent;
+	public static boolean ifInitialized;
+	public static String masterIP;
+	public static int masterPort;
+	
+	public ArrayList<String> keyWords;
+	public ArrayList<String> result;
+	
+	public static long startTime = 0;
+	public static long endTime = 0;
+	public static long totalTime = 0;
+	public static int numResults = 0;
+	
+	public void initialize() throws ServletException, IOException {
+		keyWords = new ArrayList<String> ();
+		result = new ArrayList<String> ();
+		masterIP = getInitParameter("master").split(":")[0];		
+		masterPort = Integer.parseInt(getInitParameter("master").split(":")[1]);
+	}
+	
+	public void doGet(HttpServletRequest request, HttpServletResponse response) 
+	   throws java.io.IOException, ServletException
+	{
+		if(!ifInitialized)
+			initialize(); 
+		ifInitialized = true;
+		
+		String path = request.getRequestURI().toLowerCase().trim(); //get path
+		response.setContentType("text/html");
+	    response.setCharacterEncoding("UTF-8");    
+	    PrintWriter out = response.getWriter();
+
+		if(path.startsWith("/searchquery")) {
+			String query = request.getQueryString().trim();
+			if(query == null || query == "") {
+				return;
+			}
+			System.out.println("query is " + query);
+			
+			//get keywords
+			String searchContent = request.getParameter("search_content");
+			//get page
+			String p = request.getParameter("page");
+			int page;
+			if(p == null)
+				page = 0;
+			else
+				page = Integer.parseInt(p);
+			
+			//tokenize and stem the search content
+			Analyzer analyzer = new EnglishAnalyzer(Version.LUCENE_46);
+		    TokenStream stream = analyzer.tokenStream(null, searchContent); //with stop word filter
+		    stream.reset();
+		      
+		    while (stream.incrementToken()) {
+				String word = stream.getAttribute(CharTermAttribute.class).toString();
+				keyWords.add(word); //add the stemmed word
+			}
+			
+		    stream.close();
+		    analyzer.close();
+		    
+		    //form the query string
+		    StringBuffer tmp = new StringBuffer();
+			for (String k : keyWords) {
+				tmp.append(k);
+				tmp.append("+");
+			}
+			int length = tmp.toString().length();
+			String keys = tmp.toString().substring(0, length-1);
+		    System.out.println("keys : " + keys);
+		    
+		    File file = new File(keys);
+			if (!file.exists()) {
+				file.createNewFile();
+				//contact master and wait for its result; write to this file
+				startTime = System.currentTimeMillis(); //start time!
+			    
+				 //contact with master using the query string
+			    String url = masterIP + ":" + masterPort + "/search?q=" + keys;
+			    
+				URL obj = new URL(url);
+				HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+				con.setRequestMethod("GET");
+				int responseCode = con.getResponseCode();
+				
+				System.out.println("\nSending 'GET' request to URL : " + url);
+				System.out.println("Response Code : " + responseCode);
+		   
+				
+				if(responseCode == 200) {
+					BufferedReader in = new BufferedReader(
+					        new InputStreamReader(con.getInputStream()));
+					String inputLine;
+					
+		        	//write to file
+					FileWriter fw = new FileWriter(file.getAbsoluteFile(), true);
+					BufferedWriter bw = new BufferedWriter(fw);
+					
+					while ((inputLine = in.readLine()) != null) {
+						if(inputLine.split("\t").length != 4) {
+							System.err.println("wrong format");
+							break;
+						}
+						bw.write(inputLine);
+						numResults++;
+					}
+					bw.flush();
+		        	bw.close();
+					in.close();	
+				}
+				else {
+					System.err.println("response code is not 200");
+				}	
+				
+				endTime = System.currentTimeMillis(); //end time!    
+	            totalTime = endTime - startTime;
+	            System.out.println("total time is : " + totalTime);
+			}
+			
+            out.println("<!DOCTYPE html>");
+            out.println("<html lang=\"en-gb\" dir=\"ltr\">");
+            out.println("<head>");
+            out.println("<meta charset=\"utf-8\">");
+            out.println("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
+            out.println("<title>Result</title>");
+            out.println("<link rel=\"stylesheet\" href=\"css/uikit.docs.min.css\">");
+            out.println("<link rel=\"shortcut icon\" href=\"css/logo.ico\" type=\"image/x-icon\">");
+            out.println("<link rel=\"apple-touch-icon-precomposed\" href=\"css/logo.png\">");
+            out.println("<script src=\"css/jquery.js\"></script>");
+            out.println("<script src=\"css/uikit.min.js\"></script>");
+            out.println("</head>");
+
+            out.println("<body>");
+            out.println("<div class=\"uk-container uk-container-center uk-margin-top uk-margin-large-bottom\">");
+            out.println("<div class=\"uk-width-medium-2-2\">");
+            out.println("<div class=\"uk-panel uk-panel-header\">");
+            out.println("<img class=\"uk-margin-bottom\" width=\"300\" height=\"200\" src=\"title.png\" alt=\"\">");
+            out.println("<form class=\"uk-form uk-form-stacked\" action=\"/search\" method=\"get\">");
+            out.println("<div class=\"uk-form-row\">");
+            out.println("<input class=\"uk-width-medium-2-3\" type=\"text\" placeholder=\"Search Content...\" name=\"search_content\">");
+            out.println("</div>");
+            out.println("<div class=\"uk-form-row\">");
+            out.println("<input class=\"uk-button uk-button-primary\" type=\"submit\" value=\"YASE search\">");
+            out.println("</div>");
+            out.println("</form>");
+            out.println("</div>");
+            out.println("</div>");
+            out.println("<p></p>");
+
+            out.println("<div class=\"uk-width-medium-2-3\">");
+            out.println("<div class=\"uk-panel uk-panel-header\">");
+            out.println("<h3 class=\"uk-panel-title\">About " + numResults + " results (" + totalTime + " ms) </h3>");
+            out.println("</div>");
+
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            String line;
+            String values[];
+            int lineNo = 1;
+            
+            while((line = br.readLine()) != null){
+            	//read from line page to line page + 10
+            	if(lineNo <= page){
+            		lineNo++;
+            		continue;
+            	} 
+            	else if (lineNo > page + 10){
+            		break;
+            	}
+            	lineNo++;
+            	
+            	values = line.split("\t");
+            	String URL = values[1];
+            	String title = values[2];
+            	String preview =values[3];
+            	
+            	//title
+            	out.println("<h2>");
+            	out.println("<a href=\"" + URL + "\">");
+                out.println(title);
+                out.println("</a>");
+                out.println("</h2>");
+                
+                //link and preview
+                out.println("<div class=\"uk-form-row\">");
+                out.println("<p>");
+                out.println(URL);
+                out.println("</p>");
+                out.println("<p>");
+                out.println(preview + "...");
+                out.println("</p>");
+            }
+            
+            out.println("<p></p>");
+            
+            if(page == 0) {
+            	out.println("<div class=\"uk-width-medium-2-3\">");
+                out.println("<ul class=\"uk-pagination\">");
+                out.println("<li class=\"uk-disabled\"><span> << </span></li>");
+                page += 10;
+                out.println("<li><a href=searchquery?search_content=" + keys + "&page=" + page + "><span> >> </span></a></li>");
+                out.println("</ul>");
+                out.println("</div>");
+            }
+            else if (page == (Math.ceil(1.0 * numResults / 10) - 1) * 10) {
+            	out.println("<div class=\"uk-width-medium-2-3\">");
+                out.println("<ul class=\"uk-pagination\">");
+                out.println("<li><a href=searchquery?search_content=" + keys + "&page=" + (page-10) + "><span> << </span></a></li>");
+                out.println("<li class=\"uk-disabled\"><span> >> </span></li>");
+                out.println("</ul>");
+                out.println("</div>");
+            }
+            else {
+            	out.println("<div class=\"uk-width-medium-2-3\">");
+                out.println("<ul class=\"uk-pagination\">");
+                out.println("<li><a href=searchquery?search_content=" + keys + "&page=" + (page-10) + "><span> << </span></a></li>");
+                out.println("<li><a href=searchquery?search_content=" + keys + "&page=" + (page+10) + "><span> >> </span></a></li>");
+                out.println("</ul>");
+                out.println("</div>");
+            } 
+            out.println("</div>");
+            out.println("</div>");
+            out.println("</body>");
+            out.println("</html>");
+        }		
+		return;
+	}
+}
+  

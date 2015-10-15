@@ -1,0 +1,102 @@
+package edu.upenn.cis455.YASE.pagerank;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+
+public class ConvertFile2 {
+	
+	
+	private static void convert(String filePath) throws IOException{
+		File file=new File(filePath);
+		BufferedReader br=new BufferedReader(new FileReader(filePath));
+		//DataInputStream dis=new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
+		String line="";
+		Set<String> sourceSet=new HashSet<String>();
+		
+		//get all source link
+		while((line=br.readLine())!=null){
+			System.out.println(line);
+			String split[]=line.split("	");
+			sourceSet.add(split[0]);			
+		}
+		br.close();
+		
+		//check all destination link, find all new source link
+		br=new BufferedReader(new FileReader(filePath));
+		Set<String> newSourceSet=new HashSet<String>();
+		while((line=br.readLine())!=null){
+			String split[]=line.split("	");
+			for(int i=2;i<split.length;i++){
+				if(!sourceSet.contains(split[i])){
+					newSourceSet.add(split[i]);
+				}
+			}			
+		}
+		br.close();
+		
+		//Set<String> allSource=new HashSet<String>();
+		//allSource.addAll(sourceSet);
+		//allSource.addAll(newSourceSet);
+		List<String> sourceList=new ArrayList<String>(sourceSet);
+		//System.out.println("source set:"+sourceSet);
+		//System.out.println("newSourceSET:"+newSourceSet);
+		//System.out.println("allsource:"+allSource);
+	
+		//append to file
+		try {
+		    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filePath, true)));
+		    //Iterator iter=allSource.iterator();
+		    //String dest="";
+		    //while(iter.hasNext()){
+		    	//dest=dest+iter.next()+"	";
+		    	//System.out.println(dest);
+		    //}
+		    
+		    Iterator iter2=newSourceSet.iterator();
+		    String mergeLine="";
+		    out.println("");
+		    
+			while(iter2.hasNext()){
+				int randomNum = 0 + (int)(Math.random()*(sourceSet.size()-1));
+				String dest=sourceList.get(randomNum);
+				mergeLine=iter2.next()+"	1.0	"+dest;
+				//System.out.println(mergeLine);
+				out.println(mergeLine);
+			}			
+			//writer.println(mergeLine);
+		   // out.println("the text");
+		    out.close();
+		} catch (IOException e) {
+		    //exception handling left as an exercise for the reader
+		}
+
+		
+		
+		
+		
+	}
+	
+	public static void main(String args[]) throws IOException{
+		//System.out.println(args[0]);
+		String filePath=args[0];
+		convert(filePath);
+	}
+
+}

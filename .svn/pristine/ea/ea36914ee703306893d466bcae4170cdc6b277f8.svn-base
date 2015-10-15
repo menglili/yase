@@ -1,0 +1,29 @@
+package edu.upenn.cis455.YASE.searcher;
+
+import java.util.ArrayList;
+
+public class URLVector {
+	private String url;
+	private ArrayList<Float> vector;
+	public URLVector(String url, int VectorDim){
+		this.url = url;
+		this.vector = new ArrayList<Float>(VectorDim);
+		for(int i =0;i<VectorDim;i++){
+			vector.add(0f);
+		}
+	}
+	public String getURL(){
+		return url;
+	}
+	public void setVector(int index, Float tfidf){
+		vector.add(index, tfidf);
+	}
+	public float cossimilarity(ArrayList<Float> query){
+		float res = 0;
+		for(int i=0;i<query.size();i++){
+			res += query.get(i)*query.get(i)*vector.get(i);
+		}
+		return res;
+	}
+
+}

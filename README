@@ -1,0 +1,70 @@
+1. Team members: 
+Chaoyi Huang (chaoyih)
+Mengli Li (limengli)
+Huinan Yu (huinanyu)
+Xinchao Shen (xinchaos)
+
+2. Features Implemented:
+
+Distributed Crawler
+Distributed Indexer
+Search Interface
+PageRank calculator
+IDF caculator
+
+3. files included:
+edu.upenn.cis455.YASE.crawler
+/YASE/src/edu/upenn/cis455/YASE/crawler/CheckPointThread.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/ContentExtractor.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/CrawlerHttpClient.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/CrawlerListenerThread.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/CrawlerMain.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/CrawlerWorkerThread.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/DebugCrawler.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/HttpClient.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/LinkExtractor.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/RobotsClient.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/RobotsTxt.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/RobotsTxtManager.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/SendURLThread.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/SyncFroniterWriter.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/SyncLinkWriter.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/SyncQueue.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/SyncRawWriter.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/URLFilter.java
+/YASE/src/edu/upenn/cis455/YASE/crawler/URLFrontier.java
+edu.upenn.cis455.YASE.database
+/YASE/src/edu/upenn/cis455/YASE/database/DBDriver.java
+/YASE/src/edu/upenn/cis455/YASE/database/YASEDatabase.java
+edu.upenn.cis455.YASE.database.YASEDatabase
+edu.upenn.cis455.YASE.indexer
+/YASE/src/edu/upenn/cis455/YASE/indexer/InvertIndex.java
+edu.upenn.cis455.YASE.pagerank
+/YASE/src/edu/upenn/cis455/YASE/pagerank/ConvertFile.java
+/YASE/src/edu/upenn/cis455/YASE/pagerank/ConvertFile2.java
+/YASE/src/edu/upenn/cis455/YASE/pagerank/PRDriver.java
+/YASE/src/edu/upenn/cis455/YASE/pagerank/PRMapper.java
+/YASE/src/edu/upenn/cis455/YASE/pagerank/PRReducer.java
+/YASE/src/edu/upenn/cis455/YASE/pagerank/SavePR.java
+edu.upenn.cis455.YASE.search
+/YASE/src/edu/upenn/cis455/YASE/search/DefaultServlet.java
+/YASE/src/edu/upenn/cis455/YASE/search/Page.java
+edu.upenn.cis455.YASE.searcher
+/YASE/src/edu/upenn/cis455/YASE/searcher/GetPreviewByURLThread.java
+/YASE/src/edu/upenn/cis455/YASE/searcher/GetURLByWordThread.java
+/YASE/src/edu/upenn/cis455/YASE/searcher/IndexerServlet.java
+/YASE/src/edu/upenn/cis455/YASE/searcher/SearcherServlet.java
+/YASE/src/edu/upenn/cis455/YASE/searcher/URLVector.java
+/YASE/src/edu/upenn/cis455/YASE/searcher/META-INF
+/YASE/src/edu/upenn/cis455/YASE/searcher/WEB-INF
+edu.upenn.cis455.YASE.storage
+/YASE/src/edu/upenn/cis455/YASE/storage/FileSplitter.java
+/YASE/src/edu/upenn/cis455/YASE/storage/IDFCaculator.java
+/YASE/src/edu/upenn/cis455/YASE/storage/Master.java
+/YASE/src/edu/upenn/cis455/YASE/storage/Worker.java
+
+
+3. Run instruction:
+
+Export WAR from the eclipse project and install it on Jetty.
+Visit /defaultservlet

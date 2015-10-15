@@ -1,0 +1,265 @@
+package edu.upenn.cis455.YASE.indexer;
+
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.PriorityQueue;
+
+public class InvertIndex {
+    public static class Map extends MapReduceBase implements
+            Mapper<LongWritable, Text, Text, Text> {
+        private final Text word = new Text();
+        private final Text url_tf = new Text();
+
+        @Override
+        public void map(LongWritable key, Text value,
+                        OutputCollector<Text, Text> output, Reporter reporter)
+                throws IOException {
+
+            String line = value.toString();
+            String[] lineSplit = line.split("\t");
+
+            if (lineSplit.length != 4) {
+                // System.err.println("error: line read:" + line + " ");
+                return;
+            }
+
+            // set to lowercase
+            for (int i = 0; i < lineSplit.length; i++)
+                lineSplit[i] = lineSplit[i].toLowerCase();
+
+            // get params
+            String urlString = lineSplit[0];
+            String titleString = lineSplit[2];
+            String wordsString = lineSplit[3];
+
+            // make url appear multiple times to increase its TF
+            String[] urlKeywordsStringArray = separateURLKeywords(urlString);
+            String multipleURLKeywords = "";
+            if (urlKeywordsStringArray != null) {
+                for (String s : urlKeywordsStringArray) {
+                    multipleURLKeywords += " " + repeatString(s, 5);
+                }
+            }
+
+            // make title appear multiple times to increase its TF
+            String multipleTitles = repeatString(titleString, 10);
+
+            // merge title with words
+            String allWords = multipleURLKeywords + multipleTitles + " "
+                    + wordsString;
+
+            // compute TF
+            HashMap<String, Integer> urlTFMap = new HashMap<String, Integer>();
+            int dataLength = 0;
+            for (String wordString : allWords.split(" ")) {
+
+                // check alphanumeric
+                if (isNumberic(wordString) || !isValidString(wordString)) {
+                    // System.err.println("Error: not alphanumeric: " +
+                    // wordString);
+                    continue;
+                }
+                if (urlTFMap.keySet().contains(wordString)) {
+                    int tf = urlTFMap.get(wordString);
+                    tf++;
+                    urlTFMap.put(wordString, tf); // update tf
+                } else { // if new
+                    urlTFMap.put(wordString, 1);
+                }
+                dataLength++;
+            }
+
+            // compute TF2
+            for (String w : urlTFMap.keySet()) {
+                double tf = (double) urlTFMap.get(w);
+                double tf2 = tf / java.lang.Math.sqrt(dataLength);
+                url_tf.set(urlString + " " + tf2);
+                word.set(w);
+                output.collect(word, url_tf);
+            }
+
+        }
+
+    }
+
+    public static class Reduce extends MapReduceBase implements
+            Reducer<Text, Text, Text, Text> {
+
+        @Override
+        public void reduce(Text key, Iterator<Text> values,
+                           OutputCollector<Text, Text> output, Reporter reporter)
+                throws IOException {
+
+            Text invertedList = new Text();
+
+            // read all immediate results and sort them in the queue by TF
+            PriorityQueue<URLTF> urlTFQueue = new PriorityQueue<URLTF>(100,
+                    new TFComparator());
+
+            // limit number of urls per word
+            while (values.hasNext()) {
+
+                String urlString = values.next().toString();
+                String[] strings = urlString.split(" ");
+
+                // check url TF \t url TF format
+                if (strings.length != 2) {
+                    // System.err.println("format error: url TF: " + urlString);
+                    continue;
+                }
+                String url = strings[0];
+                double tf = Double.parseDouble(strings[1]);
+
+                urlTFQueue.add(new URLTF(url, tf));
+            }
+
+            // reconstruct sorted word->url TF \t url TF....
+            String contentList = "";
+            while (true) {
+                URLTF urltf = urlTFQueue.poll();
+                if (urltf == null)
+                    break;
+                contentList += "\t" + urltf.getUrl() + " " + urltf.getTf();
+            }
+
+            // remove first \t
+            contentList = contentList.replaceFirst("\t", "");
+
+            invertedList.set(contentList);
+            output.collect(key, invertedList);
+        }
+
+        static class TFComparator implements Comparator<URLTF> {
+
+            @Override
+            public int compare(URLTF o1, URLTF o2) {
+                return Double.compare(o2.getTf(), o1.getTf());
+            }
+        }
+
+        private class URLTF {
+
+            private String url;
+            private double tf;
+
+            public URLTF(String url, double tf) {
+                this.tf = tf;
+                this.url = url;
+            }
+
+            public double getTf() {
+                return tf;
+            }
+
+            public String getUrl() {
+                return url;
+            }
+
+            @Override
+            public String toString() {
+                return String.format("{url=%s, tf=%s}", url, tf);
+            }
+
+        }
+    }
+
+    private static String repeatString(String s, int numRepeats) {
+        String result = "";
+        for (int i = 0; i < numRepeats; i++) {
+            result += (" " + s);
+        }
+        result = result.trim();
+        return result;
+    }
+
+    private static String[] separateURLKeywords(String urlString) {
+
+        String[] stringArray = null;
+        try {
+            URL url = new URL(urlString);
+            String s = url.getHost();
+            s = s.replaceFirst("http://", "");
+            int index = s.lastIndexOf(".");
+            s = s.substring(0, index);
+            if (s.startsWith("www.")) {
+                s = s.substring(4);
+
+            }
+            stringArray = s.split("\\.");
+
+        } catch (MalformedURLException e) {
+            System.err.println("URL format error: " + urlString);
+
+        }
+
+        return stringArray;
+    }
+
+    private static boolean isValidString(final CharSequence cs) {
+        if (cs == null) {
+            return false;
+        }
+        final int sz = cs.length();
+        for (int i = 0; i < sz; i++) {
+            if (!Character.isLetterOrDigit(cs.charAt(i)) && cs.charAt(i) != '-'
+                    && cs.charAt(i) != '.' && cs.charAt(i) != '\'') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isNumberic(final CharSequence cs) {
+        if (cs == null) {
+            return false;
+        }
+        final int sz = cs.length();
+        for (int i = 0; i < sz; i++) {
+            if (!Character.isDigit(cs.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static void main(String[] args) throws Exception {
+        JobConf conf = new JobConf(InvertIndex.class);
+        conf.setJobName("InvertIndex");
+        long timeout = 1000 * 60 * 60;
+        conf.setLong("mapred.task.timeout", timeout);
+
+        conf.setOutputKeyClass(Text.class);
+        conf.setOutputValueClass(Text.class);
+
+        conf.setMapperClass(Map.class);
+        conf.setReducerClass(Reduce.class);
+
+        conf.setInputFormat(TextInputFormat.class);
+        conf.setOutputFormat(TextOutputFormat.class);
+
+        FileInputFormat.setInputPaths(conf, new Path(args[0]));
+        FileOutputFormat.setOutputPath(conf, new Path(args[1]));
+
+        File outputFolder = new File(args[1]);
+        File[] files = outputFolder.listFiles();
+
+        if (outputFolder.exists()) {
+            for (File file : files) {
+                file.delete();
+            }
+            outputFolder.delete();
+        }
+
+        JobClient.runJob(conf);
+    }
+}
